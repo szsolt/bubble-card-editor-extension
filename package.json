@@ -1,0 +1,36 @@
+{
+  "name": "bubble-card-editor",
+  "version": "0.1.0",
+  "description": "An editor-extension framework for Bubble Card: run module editor_code and build custom config controls on unmodified Bubble Card.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/szsolt/bubble-card-editor-extension.git"
+  },
+  "homepage": "https://github.com/szsolt/bubble-card-editor-extension#readme",
+  "bugs": {
+    "url": "https://github.com/szsolt/bubble-card-editor-extension/issues"
+  },
+  "author": "szsolt",
+  "keywords": [
+    "home-assistant",
+    "lovelace",
+    "bubble-card",
+    "hacs",
+    "frontend",
+    "editor"
+  ],
+  "scripts": {
+    "build": "node build.mjs",
+    "watch": "node build.mjs --watch",
+    "test": "node --test test/*.test.mjs"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "js-yaml": "^4.2.0",
+    "lit": "^3.1.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
