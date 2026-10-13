@@ -1,6 +1,6 @@
 {
   "name": "bubble-card-editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An editor-extension framework for Bubble Card: run module editor_code and build custom config controls on unmodified Bubble Card.",
   "type": "module",
   "repository": {
