@@ -8,7 +8,9 @@
 //
 // Reachable sources (priority order — first id wins):
 //   1. bubble-modules.yaml (then the community path) — fetch + js-yaml parse.
-//   2. bubble-card-bct-cache-v1:${host}.aggregatedModules — localStorage cache.
+//   2. bubble-card-bct-cache-v2:${host}.files[*].modules — localStorage cache
+//      (Bubble Card 3.3+, which deletes the v1 key); falls back to
+//      bubble-card-bct-cache-v1:${host}.aggregatedModules on older releases.
 //   3. bubble-card-module-store.modules — localStorage (community store catalog).
 //
 // NOT reachable: sensor.bubble_card_modules (legacy text entity) needs a hass
@@ -28,7 +30,7 @@ const YAML_URLS = [
   '/local/bubble/bubble-modules.yaml',
   '/local/community/Bubble-Card/bubble-modules.yaml',
 ];
-const BCT_CACHE_PREFIX = 'bubble-card-bct-cache-v1:';
+const BCT_CACHE_PREFIX = 'bubble-card-bct-cache-v';
 const STORE_KEY = 'bubble-card-module-store';
 
 // Default env wires the real browser globals; tests pass a fake.
@@ -77,10 +79,16 @@ export async function readYamlModules(env) {
 export async function readBctCache(env) {
   try {
     const host = env.location?.host || 'default';
-    const raw = env.localStorage.getItem(`${BCT_CACHE_PREFIX}${host}`);
+    const v2 = env.localStorage.getItem(`${BCT_CACHE_PREFIX}2:${host}`);
+    const raw = v2 || env.localStorage.getItem(`${BCT_CACHE_PREFIX}1:${host}`);
     if (!raw) return {};
     const obj = JSON.parse(raw);
-    const agg = obj?.aggregatedModules;
+    let agg = obj?.aggregatedModules;
+    if (v2) {
+      // v2 stores per-file entries only; the flat id map is derived on read.
+      agg = {};
+      for (const entry of Object.values(obj?.files || {})) Object.assign(agg, entry?.modules);
+    }
     if (!agg || typeof agg !== 'object') return {};
     const mods = stripMeta(agg);
     env.log.debug(`sources: bct-cache → ${Object.keys(mods).length} module(s)`);

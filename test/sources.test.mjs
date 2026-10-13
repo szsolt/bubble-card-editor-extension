@@ -81,6 +81,20 @@ test('readBctCache: reads aggregatedModules under the host-scoped key', async ()
   assert.deepEqual(Object.keys(out).sort(), ['other', 'si']);
 });
 
+test('readBctCache: v2 cache (Bubble Card 3.3+) unions files[*].modules, preferred over v1', async () => {
+  const env = fakeEnv({
+    host: 'h',
+    store: {
+      'bubble-card-bct-cache-v2:h': JSON.stringify({
+        version: 2,
+        files: { 'a.yaml': { modules: { si: mod() } }, 'b.yaml': { modules: { other: mod() } } },
+      }),
+      'bubble-card-bct-cache-v1:h': JSON.stringify({ aggregatedModules: { stale: mod() } }),
+    },
+  });
+  assert.deepEqual(Object.keys(await readBctCache(env)).sort(), ['other', 'si']);
+});
+
 test('readBctCache: missing key → {} (no throw)', async () => {
   assert.deepEqual(await readBctCache(fakeEnv({})), {});
 });

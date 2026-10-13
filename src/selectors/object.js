@@ -32,6 +32,17 @@ function compileExpr(expr) {
   return fn;
 }
 
+// A two-field multiple list (key + value rows, e.g. a state map) may arrive in
+// its compact YAML shape: a dict {key: value} or pairs [[key, value]]. Show
+// those as rows; any edit then stores the row form, which consumers accept too.
+export function rowsOf(value, fields) {
+  const [k, v] = Array.isArray(fields) ? [] : Object.keys(fields || {});
+  const row = (a, b) => ({ [k]: a, [v]: b });
+  if (Array.isArray(value)) return value.map(i => (Array.isArray(i) && v ? row(i[0], i[1]) : i));
+  if (value && typeof value === 'object' && v) return Object.entries(value).map(([a, b]) => row(a, b));
+  return [];
+}
+
 export function registerObjectSelector() {
   if (customElements.get('ha-selector-bce_object')) return 'ha-selector-bce_object';
 
@@ -541,8 +552,12 @@ export function registerObjectSelector() {
       return this._renderSingle();
     }
 
+    _items() {
+      return rowsOf(this.value, this.selector?.bce_object?.fields);
+    }
+
     _renderMultiple() {
-      const items = Array.isArray(this.value) ? this.value : [];
+      const items = this._items();
 
       return html`
         ${this.label ? html`<label class="bce-object-label">${this.label}</label>` : nothing}
@@ -699,7 +714,7 @@ export function registerObjectSelector() {
       const isMultiple = this.selector?.bce_object?.multiple || false;
 
       if (isMultiple) {
-        const newValue = [...(Array.isArray(this.value) ? this.value : []), {}];
+        const newValue = [...this._items(), {}];
         fireEvent(this, "value-changed", { value: newValue });
       } else {
         fireEvent(this, "value-changed", { value: {} });
@@ -707,7 +722,7 @@ export function registerObjectSelector() {
     }
 
     _duplicateItem(index) {
-      const items = Array.isArray(this.value) ? this.value : [];
+      const items = this._items();
       const copy = JSON.parse(JSON.stringify(items[index] || {}));
 
       if (this._uiState) {
@@ -732,7 +747,7 @@ export function registerObjectSelector() {
       const { oldIndex, newIndex } = ev.detail;
       if (oldIndex === newIndex) return;
 
-      const newValue = [...(Array.isArray(this.value) ? this.value : [])];
+      const newValue = [...this._items()];
       const [moved] = newValue.splice(oldIndex, 1);
       newValue.splice(newIndex, 0, moved);
 
@@ -766,7 +781,7 @@ export function registerObjectSelector() {
       }
 
       if (isMultiple) {
-        const newValue = [...(this.value || [])];
+        const newValue = [...this._items()];
         newValue.splice(index, 1);
         fireEvent(this, "value-changed", { value: newValue });
       } else {
@@ -789,7 +804,7 @@ export function registerObjectSelector() {
       // equal to the field default on a key the stored item never had stays
       // unstored — explicitly picking the default and leaving it unset are the
       // same config, and the clear (✕) keeps meaning "back to default".
-      const stored = isMultiple ? (this.value || [])[index] : this.value;
+      const stored = isMultiple ? this._items()[index] : this.value;
       for (const [key, dflt] of Object.entries(
         this._selectDefaults(this.selector?.bce_object?.fields, stored)
       )) {
@@ -800,7 +815,7 @@ export function registerObjectSelector() {
       this.requestUpdate();
 
       if (isMultiple) {
-        const newValue = [...(this.value || [])];
+        const newValue = [...this._items()];
         newValue[index] = clean;
         fireEvent(this, "value-changed", { value: newValue });
       } else {
